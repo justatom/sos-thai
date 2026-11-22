@@ -80,9 +80,25 @@ rem ---------- 6. Build the Thai patch ----------
 %PY% "%REPO%tools\install_thai.py" --toolkit "!TK!" || goto :fail
 
 rem ---------- 7. Rebuild the disc and install it ----------
+rem Only 2 files are changed by the patch. full-rebuild would recompress every
+rem asset in the game (animations, maps, ...), so instead we compress, keep just
+rem the 2 patched files, restore all other files from the original disc, and pack.
 echo Rebuilding the game disc (this takes a few minutes) ...
 pushd "!TK!"
-call full-rebuild.bat >nul
+call compress-assets.bat >nul 2>&1
+popd
+if exist "!TK!\_thai_keep" rmdir /s /q "!TK!\_thai_keep"
+mkdir "!TK!\_thai_keep"
+copy /y "!TK!\__extracted-files\resource\message\ichigo_message_all_US.lzs" "!TK!\_thai_keep\" >nul || goto :fail
+copy /y "!TK!\__extracted-files\resource\ui\font_data.lzs" "!TK!\_thai_keep\" >nul || goto :fail
+pushd "!TK!"
+call unpack-encrypted-disc.bat >nul 2>&1
+popd
+copy /y "!TK!\_thai_keep\ichigo_message_all_US.lzs" "!TK!\__extracted-files\resource\message\" >nul || goto :fail
+copy /y "!TK!\_thai_keep\font_data.lzs" "!TK!\__extracted-files\resource\ui\" >nul || goto :fail
+if exist "!TK!\__disc-out\disc" del /q "!TK!\__disc-out\disc"
+pushd "!TK!"
+call pack-disc.bat >nul 2>&1
 popd
 if not exist "!TK!\__disc-out\disc" ( echo [X] Rebuild failed. & goto :fail )
 copy /y "!TK!\__disc-out\disc" "!GAME!\disc" >nul || ( echo [X] Could not copy the new disc into the game folder. & goto :fail )
