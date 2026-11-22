@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+_thai_patch_work/
+# never commit game files
+disc
+disc.*
+*.DDS
+*.lzs
