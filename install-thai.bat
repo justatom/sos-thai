@@ -54,54 +54,20 @@ if not exist "!TK!\unpack-encrypted-disc.bat" ( echo [X] "!TK!" is not the disc 
 echo Toolkit     : !TK!
 echo.
 
-rem ---------- 4. Back up the original disc (once) ----------
+rem ---------- 4. Original disc (backed up once) ----------
+rem Uses disc.original in the game folder. If it is missing, the toolkit's
+rem __disc-in\disc is used when present, otherwise the current game disc.
 if not exist "!GAME!\disc.original" (
+  set "SRC=!GAME!\disc"
+  if exist "!TK!\__disc-in\disc" set "SRC=!TK!\__disc-in\disc"
   echo Backing up the original disc to disc.original ...
-  copy /y "!GAME!\disc" "!GAME!\disc.original" >nul || ( echo [X] Backup failed. & goto :fail )
+  copy /y "!SRC!" "!GAME!\disc.original" >nul || ( echo [X] Backup failed. & goto :fail )
 )
 
-rem ---------- 5. Unpack the ORIGINAL disc ----------
-echo Unpacking the original game data (this takes a few minutes) ...
-for %%D in (__disc-in __disc-out __extracted-files __raw-assets temp) do (
-  if exist "!TK!\%%D" rmdir /s /q "!TK!\%%D"
-  mkdir "!TK!\%%D"
-)
-copy /y "!GAME!\disc.original" "!TK!\__disc-in\disc" >nul || goto :fail
-pushd "!TK!"
-call unpack-encrypted-disc.bat >nul
-call extract-assets.bat >nul
-popd
-if not exist "!TK!\__raw-assets\resource\message\ichigo_message_all_US.lzs.dcmp\msg_System.bin" (
-  echo [X] Unpacking failed. Check that disc.original is the untouched game file.
-  goto :fail
-)
-
-rem ---------- 6. Build the Thai patch ----------
-%PY% "%REPO%tools\install_thai.py" --toolkit "!TK!" || goto :fail
-
-rem ---------- 7. Rebuild the disc and install it ----------
-rem Only 2 files are changed by the patch. full-rebuild would recompress every
-rem asset in the game (animations, maps, ...), so instead we compress, keep just
-rem the 2 patched files, restore all other files from the original disc, and pack.
-echo Rebuilding the game disc (this takes a few minutes) ...
-pushd "!TK!"
-call compress-assets.bat >nul 2>&1
-popd
-if exist "!TK!\_thai_keep" rmdir /s /q "!TK!\_thai_keep"
-mkdir "!TK!\_thai_keep"
-copy /y "!TK!\__extracted-files\resource\message\ichigo_message_all_US.lzs" "!TK!\_thai_keep\" >nul || goto :fail
-copy /y "!TK!\__extracted-files\resource\ui\font_data.lzs" "!TK!\_thai_keep\" >nul || goto :fail
-pushd "!TK!"
-call unpack-encrypted-disc.bat >nul 2>&1
-popd
-copy /y "!TK!\_thai_keep\ichigo_message_all_US.lzs" "!TK!\__extracted-files\resource\message\" >nul || goto :fail
-copy /y "!TK!\_thai_keep\font_data.lzs" "!TK!\__extracted-files\resource\ui\" >nul || goto :fail
-if exist "!TK!\__disc-out\disc" del /q "!TK!\__disc-out\disc"
-pushd "!TK!"
-call pack-disc.bat >nul 2>&1
-popd
-if not exist "!TK!\__disc-out\disc" ( echo [X] Rebuild failed. & goto :fail )
-copy /y "!TK!\__disc-out\disc" "!GAME!\disc" >nul || ( echo [X] Could not copy the new disc into the game folder. & goto :fail )
+rem ---------- 5. Build the Thai disc ----------
+rem Only the 2 files the mod changes are unpacked and rebuilt; every other
+rem file is copied unchanged from disc.original. See tools\build_disc.py
+%PY% "%REPO%tools\build_disc.py" --toolkit "!TK!" --original "!GAME!\disc.original" --out "!GAME!\disc" || goto :fail
 
 echo.
 echo ============================================================
@@ -113,6 +79,6 @@ exit /b 0
 
 :fail
 echo.
-echo Installation stopped. Nothing in the game folder was changed except disc.original (backup).
+echo Installation stopped. The game disc was not changed ^(only disc.original may have been created^).
 pause
 exit /b 1

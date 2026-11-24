@@ -74,8 +74,8 @@ def has_thai(s):
     return any(0x0E00 <= ord(c) <= 0x0E7F or 0xE000 <= ord(c) <= 0xE0FF for c in s)
 
 
-def do_text(tk):
-    msg = os.path.join(tk, MSG_REL)
+def do_text(tk, base=None):
+    msg = os.path.join(base or tk, MSG_REL)
     tr = json.load(open(os.path.join(REPO, "translation", "th.json"), encoding="utf-8"))
     sysbin = os.path.join(msg, "msg_System.bin")
     if not os.path.exists(sysbin):
@@ -229,10 +229,10 @@ def inject(name, atlas, param, kits):
     return em
 
 
-def do_fonts(tk):
-    fdir = os.path.join(tk, FONT_REL)
+def do_fonts(tk, base=None):
+    fdir = os.path.join(base or tk, FONT_REL)
     exe = texconv(tk)
-    work = os.path.join(tk, "_thai_patch_work")
+    work = os.path.join(base or tk, "_thai_patch_work")
     shutil.rmtree(work, ignore_errors=True)
     os.makedirs(work)
     kits = available_kits()
@@ -251,10 +251,11 @@ def do_fonts(tk):
     shutil.rmtree(work, ignore_errors=True)
 
 
-def precheck(tk, only):
+def precheck(tk, only, base=None):
     """Refuse to touch assets that were already patched (would double-inject)."""
+    base = base or tk
     if only in (None, "text"):
-        sysbin = os.path.join(tk, MSG_REL, "msg_System.bin")
+        sysbin = os.path.join(base, MSG_REL, "msg_System.bin")
         if not os.path.exists(sysbin):
             sys.exit("Cannot find " + sysbin + "\nRun unpack-encrypted-disc and extract-assets first.")
         if any(has_thai(s) for s in read_bin(sysbin)):
@@ -262,9 +263,9 @@ def precheck(tk, only):
                      "Extract again from the ORIGINAL (unmodded) disc file, then re-run.")
     if only in (None, "fonts"):
         texconv(tk)
-        p = find_case(os.path.join(tk, FONT_REL), "FOT-UDMarugo_LargePro-B_param.bin")
+        p = find_case(os.path.join(base, FONT_REL), "FOT-UDMarugo_LargePro-B_param.bin")
         if not p:
-            sys.exit("Cannot find the font files in " + os.path.join(tk, FONT_REL))
+            sys.exit("Cannot find the font files in " + os.path.join(base, FONT_REL))
         d = open(p, "rb").read()
         if struct.unpack_from("<H", d, 0x0E01 * 2)[0] != 0xFFFF:
             sys.exit("The extracted fonts already contain Thai.\n"
