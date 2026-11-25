@@ -32,7 +32,7 @@
 |---|---|
 | ตัวเกม | STORY OF SEASONS: Friends of Mineral Town บน Steam หรือ Epic ติดตั้งไว้แล้ว และเคยเปิดเล่นอย่างน้อย 1 ครั้ง |
 | Windows | Windows 10 หรือ 11 (64-bit) |
-| พื้นที่ว่าง | **อย่างน้อย 4 GB** (ไฟล์สำรอง `disc.original` ราว 1 GB, ไฟล์ `disc` ใหม่ราว 1 GB และไฟล์ชั่วคราวราว 1.5 GB ในโฟลเดอร์ toolkit ที่ถูกลบเองเมื่อติดตั้งเสร็จ) |
+| พื้นที่ว่าง | **อย่างน้อย 4 GB** ในไดรฟ์ของเกม (ไฟล์สำรอง `disc.original` ราว 1 GB บวกไฟล์ชั่วคราวราว 2.5 GB ที่ลบเองเมื่อติดตั้งเสร็จ) |
 | Python 3 | ดาวน์โหลดที่ <https://www.python.org/downloads/> ตอนติดตั้ง**ต้องติ๊ก "Add python.exe to PATH"** ตัวติดตั้งม็อดจะลงไลบรารี Pillow ให้เองอัตโนมัติ |
 | sos-fomt disc toolkit | เครื่องมือแตก/แพ็กไฟล์เกมที่ชุมชนผู้เล่นทำไว้ (repo นี้ไม่ได้แจกให้) ดาวน์โหลดจากกระทู้ **"[MOD] disc modding toolkit & general discussion"** ในหน้า Discussions ของเกมบน Steam Community: <https://steamcommunity.com/app/978780/discussions/0/3159831641989625851> (ลิงก์ดาวน์โหลดอยู่ในโพสต์แรก) ใช้ได้กับไฟล์เกมจาก Epic ด้วย เพราะเป็นเกมตัวเดียวกัน |
 | ม็อดนี้ | กดปุ่มสีเขียว **Code → Download ZIP** ที่หน้านี้ แล้วแตกไฟล์ |
@@ -54,18 +54,17 @@
 
 ### ขั้นที่ 2 — วาง toolkit
 1. แตกไฟล์ toolkit ที่ดาวน์โหลดมา จะได้โฟลเดอร์ชื่อขึ้นต้นด้วย `sos-fomt_disc-toolkit` (เช่น `sos-fomt_disc-toolkit_1-1-1`)
-2. **ย้ายโฟลเดอร์นั้นไปไว้ในโฟลเดอร์เกม** (แนะนำ ตัวติดตั้งจะหาเจอเอง)
-   ถ้าไดรฟ์เกมพื้นที่ไม่พอ จะวาง toolkit ไว้ที่อื่นก็ได้ ตัวติดตั้งจะถามตำแหน่งตอนรัน
+2. **ย้ายโฟลเดอร์ toolkit และโฟลเดอร์ม็อด (`sos-thai`) ไปไว้ในโฟลเดอร์เกม** ตัวติดตั้งจะหาทั้งสองอย่างเจอเอง
+   (จะวางที่อื่นก็ได้ ตัวติดตั้งจะถามตำแหน่งตอนรัน)
 
    ```
    STORY OF SEASONS Friends of Mineral Town\
    ├─ disc
    ├─ STORY OF SEASONS Friends of Mineral Town.exe
-   └─ sos-fomt_disc-toolkit_1-1-1\
-      ├─ unpack-encrypted-disc.bat
-      ├─ extract-assets.bat
-      ├─ full-rebuild.bat
-      └─ utils\
+   ├─ sos-fomt_disc-toolkit_1-1-1\     ← toolkit (ใช้แค่ utils\ ข้างใน)
+   └─ sos-thai\                        ← ม็อดนี้ (ถ้าดาวน์โหลด ZIP จะชื่อ sos-thai-main)
+      ├─ install-thai.bat
+      └─ uninstall-thai.bat
    ```
 
 ### ขั้นที่ 3 — รันตัวติดตั้ง
@@ -77,12 +76,9 @@
 4. รอจนขึ้น `Done!` (ช่วงที่นานที่สุดคือ encode ฟอนต์และบีบอัดไฟล์)
 
 ตัวติดตั้งทำสิ่งเหล่านี้ให้อัตโนมัติ:
-- สำรองไฟล์เกมต้นฉบับเป็น `disc.original` (ครั้งแรกครั้งเดียว)
-- ถอดไฟล์ออกจาก disc ต้นฉบับ แต่แตกและแก้เฉพาะ 2 ไฟล์ที่ม็อดต้องใช้ (ข้อความภาษาอังกฤษ US และฟอนต์)
-- ใส่ข้อความไทยและฟอนต์ไทย แล้วตรวจว่าบีบอัดกลับได้ข้อมูลถูกต้อง
-- สร้างไฟล์ `disc` ใหม่ โดยไฟล์อื่นทั้งหมดเป็นของต้นฉบับ (ตรวจ CRC เทียบกับต้นฉบับทุกไฟล์) แล้ววางทับในโฟลเดอร์เกม
-
-ถ้ามีไฟล์ `__disc-in\disc` (ต้นฉบับ) อยู่ในโฟลเดอร์ toolkit แล้ว และยังไม่มี `disc.original` ตัวติดตั้งจะใช้ไฟล์นั้นเป็นต้นฉบับ
+- สำรองไฟล์เกมต้นฉบับเป็น `disc.original` (ครั้งแรกครั้งเดียว) และสร้างม็อดจากไฟล์นี้ทุกครั้ง ติดตั้งซ้ำกี่รอบก็ได้
+- แก้เฉพาะ 2 ไฟล์ในเกม: ข้อความภาษาอังกฤษ (US) และฟอนต์ ไฟล์อื่นทั้งหมดเป็นของต้นฉบับ ตรวจ CRC ทุกไฟล์ก่อนวางทับ
+- ถ้าขั้นไหนผิดพลาด จะหยุดโดยไม่แตะไฟล์ `disc` ของเกม
 
 ### ขั้นที่ 4 — เข้าเกม
 เปิดเกมจาก Steam ตามปกติ แล้วตั้งภาษาเป็น **English** (ดู[หัวข้อ 4](#4-ตั้งภาษาในเกม))
@@ -104,7 +100,7 @@
 
 ### ขั้นที่ 2–4
 ทำเหมือน [Steam ขั้นที่ 2–4](#ขั้นที่-2--วาง-toolkit) ทุกอย่าง:
-1. วางโฟลเดอร์ toolkit ไว้ในโฟลเดอร์เกม (หรือที่อื่นก็ได้)
+1. วางโฟลเดอร์ toolkit และโฟลเดอร์ม็อดไว้ในโฟลเดอร์เกม (หรือที่อื่นก็ได้)
 2. ปิดเกมและปิด Epic Games Launcher (กันไม่ให้ Launcher ล็อกไฟล์ระหว่างติดตั้ง)
 3. ดับเบิลคลิก `install-thai.bat` (ถ้าเกมอยู่ใน `C:\Program Files\Epic Games\` ส่วนใหญ่ต้องคลิกขวา → **Run as administrator**) ถ้าตัวติดตั้งถาม ให้ลากโฟลเดอร์เกมมาวางแล้วกด Enter
 4. เปิดเกมจาก Epic แล้วตั้งภาษาเป็น **English**
@@ -151,11 +147,11 @@
 | `Python 3 was not found` | ติดตั้ง Python จาก python.org และติ๊ก **Add python.exe to PATH** แล้วรันใหม่ (ถ้าติดตั้งแล้วแต่ยังขึ้น ให้รีสตาร์ทเครื่อง) |
 | `Could not install Pillow` | เปิด Command Prompt พิมพ์ `py -3 -m pip install pillow` แล้วรันตัวติดตั้งใหม่ |
 | `...already contains Thai` / `...fonts already contain Thai` | `disc.original` ที่สำรองไว้ไม่ใช่ไฟล์ต้นฉบับ (ถูกม็อดไปแล้ว) ให้ลบ `disc.original` → Verify ไฟล์เกมใน Steam/Epic → รัน `install-thai.bat` ใหม่ |
-| `Could not read ...` / `Missing toolkit file` | `disc.original` อาจเสียหรือเป็นไฟล์ที่ถูกม็อดอื่นแก้มา ทำแบบแถวบน หรือดูว่าโฟลเดอร์ toolkit ครบ (มี `utils\7zip`, `utils\quickbms`, `utils\texconv.exe`, `utils\d`) |
+| `Could not read ...` / `Missing toolkit file` | `disc.original` อาจเสียหรือเป็นไฟล์ที่ถูกม็อดอื่นแก้มา ทำแบบแถวบน หรือดูว่าโฟลเดอร์ toolkit ครบ (มี `utils\7zip`, `utils\quickbms` และ `utils\d`) |
 | Copy ไม่ได้ / Access denied | คลิกขวา `install-thai.bat` → **Run as administrator** และปิดเกม/Launcher ก่อน |
 | เข้าเกมแล้วยังเป็นภาษาอังกฤษ | ตรวจว่าตั้งภาษาเกมเป็น English และไม่ได้เผลอกด Verify หลังติดตั้ง |
-| เข้าเกมแล้วเห็นช่องว่าง/สี่เหลี่ยมแทนตัวอักษร | ติดตั้งไม่ครบ (มักเพราะ encode ฟอนต์ถูกขัดจังหวะ) ให้รัน `install-thai.bat` ใหม่ |
-| แอนตี้ไวรัสบล็อก `.exe` ใน toolkit | toolkit ใช้ 7-Zip, QuickBMS และ texconv (ของ Microsoft) ซึ่งเป็นเครื่องมือมาตรฐาน ให้อนุญาตโฟลเดอร์ toolkit แล้วรันใหม่ |
+| เข้าเกมแล้วเห็นช่องว่าง/สี่เหลี่ยมแทนตัวอักษร | รัน `install-thai.bat` ใหม่ ถ้ายังเป็นอยู่ ให้แจ้งใน Issue พร้อมภาพหน้าจอ |
+| แอนตี้ไวรัสบล็อก `.exe` | toolkit ใช้ 7-Zip และ QuickBMS ส่วนม็อดใช้ texconv ของ Microsoft (`tools\bin`) ซึ่งเป็นเครื่องมือมาตรฐาน ให้อนุญาตโฟลเดอร์แล้วรันใหม่ |
 
 ---
 
@@ -176,7 +172,7 @@ py -3 "<โฟลเดอร์ม็อด>\tools\build_disc.py" --toolkit "<�
 `build_disc.py` ทำแบบนี้:
 1. ใช้ 7za ของ toolkit ถอดไฟล์ออกจาก disc ต้นฉบับ (ไม่แตกไฟล์รวมด้านใน) ม็อดแก้แค่ `resource\message\ichigo_message_all_US.lzs` และ `resource\ui\font_data.lzs`
 2. ใช้ QuickBMS (สคริปต์เดียวกับ toolkit) คลายการบีบอัด แล้วแตกไฟล์รวมด้านใน
-3. ใส่ข้อความไทยและฟอนต์ไทย (`install_thai.py` ใช้ texconv encode ฟอนต์ในขั้นเดียวกัน)
+3. ใส่ข้อความไทยและฟอนต์ไทย (`thai_patch.py` ใช้ texconv encode ฟอนต์ในขั้นเดียวกัน)
 4. ประกอบไฟล์รวมกลับแบบเรียงตามต้นฉบับ (จัดแนว 128 ไบต์) แล้วบีบอัดด้วย QuickBMS และคลายกลับมาเทียบว่าตรงกันทุกไบต์
 5. เขียน disc ใหม่แบบไม่เข้ารหัส (แบบเดียวกับ `pack-disc.bat`) ใส่ไฟล์อื่นตามต้นฉบับทุกไฟล์ แล้วตรวจ CRC เทียบกับต้นฉบับก่อนวางทับ
 
@@ -184,7 +180,7 @@ py -3 "<โฟลเดอร์ม็อด>\tools\build_disc.py" --toolkit "<�
 
 > อย่าใช้ `full-rebuild.bat` สร้าง disc ของม็อดนี้ เพราะจะบีบอัดไฟล์ใหม่ทั้งเกม (อนิเมชันตัวละคร แผนที่ ฯลฯ) ไม่ใช่แค่ไฟล์ที่ม็อดแก้
 
-`install_thai.py` จะไม่ยอมทำงานกับไฟล์ที่มีภาษาไทยอยู่แล้ว (กันการใส่ฟอนต์ซ้ำ) ต้องใช้ `disc` ต้นฉบับเสมอ
+ตัวสร้างจะไม่ยอมทำงานกับ disc ที่มีภาษาไทยอยู่แล้ว (กันการใส่ฟอนต์ซ้ำ) ต้องใช้ `disc` ต้นฉบับเสมอ
 
 ---
 
@@ -197,7 +193,9 @@ py -3 "<โฟลเดอร์ม็อด>\tools\build_disc.py" --toolkit "<�
 ```
 install-thai.bat            ตัวติดตั้งอัตโนมัติ
 uninstall-thai.bat          คืนไฟล์เกมต้นฉบับ
-tools/install_thai.py       ตัวสร้างม็อด (ใส่ข้อความ + ฟอนต์ลงไฟล์ที่แตกจากเกม)
+tools/build_disc.py         ตัวสร้าง disc ภาษาไทยจาก disc ต้นฉบับ
+tools/thai_patch.py         ใส่ข้อความไทย + ฟอนต์ไทย
+tools/bin/texconv.exe       ตัวแปลงรูปฟอนต์ (Microsoft DirectXTex, MIT)
 translation/th.json         คำแปลทั้งหมด  { "ไฟล์ข้อความ.bin": { "ลำดับ": "ข้อความไทย" } }
 fontkit/                    ฟอนต์ Noto Sans Thai + ชุด glyph ไทยหลายขนาด (em23–em33)
 docs/                       รายการคำแปล (Word), กลอสซารี, คู่มือสำนวนแปล
@@ -208,7 +206,8 @@ docs/                       รายการคำแปล (Word), กลอ�
 ## 10. เครดิตและสัญญาอนุญาต
 
 - **STORY OF SEASONS: Friends of Mineral Town** © Marvelous Inc. จัดจำหน่ายโดย XSEED Games / Marvelous USA, Inc. ม็อดนี้เป็นงานของแฟนเกม **ไม่เกี่ยวข้องและไม่ได้รับการรับรองจากเจ้าของเกม** และไม่มีไฟล์ของเกมอยู่ใน repo
-- **sos-fomt disc toolkit** โดยชุมชนผู้เล่น (ejh1990 และผู้ร่วมพัฒนา) ไม่ได้แจกจ่ายใน repo นี้ ข้างในมีเครื่องมือของ 7-Zip, Info-ZIP, QuickBMS และ Microsoft texconv
+- **sos-fomt disc toolkit** โดยชุมชนผู้เล่น (ejh1990 และผู้ร่วมพัฒนา) ไม่ได้แจกจ่ายใน repo นี้ ม็อดใช้ 7-Zip, QuickBMS และกุญแจถอดไฟล์ที่อยู่ใน toolkit
 - **Noto Sans Thai** © 2022 The Noto Project Authors ใช้สัญญาอนุญาต SIL Open Font License 1.1 (ดู [`fontkit/OFL.txt`](fontkit/OFL.txt)) ชุด glyph ใน `fontkit/em*` สร้างจากฟอนต์นี้และใช้สัญญาอนุญาตเดียวกัน
+- **texconv** (`tools/bin/texconv.exe`) © Microsoft Corporation, DirectXTex ใช้สัญญาอนุญาต MIT (ดู [`tools/bin/LICENSE-texconv.txt`](tools/bin/LICENSE-texconv.txt))
 - โค้ดใน `tools/` และไฟล์ `.bat` ใช้สัญญาอนุญาต MIT (ดู [`LICENSE`](LICENSE))
 - คำแปลภาษาไทยใน `translation/` และ `docs/` แจกให้ใช้กับเกมที่ซื้อมาอย่างถูกต้องเท่านั้น ห้ามนำไปใช้เชิงพาณิชย์

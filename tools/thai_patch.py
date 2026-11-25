@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 """
-SoS: Friends of Mineral Town — Thai patch builder.
+Thai text + font patching for SoS: Friends of Mineral Town (used by build_disc.py).
 
-Runs on files the player extracted from THEIR OWN copy of the game with the
-community "sos-fomt disc toolkit" (after unpack-encrypted-disc + extract-assets).
-It only edits the extracted assets in the toolkit's __raw-assets folder:
+  patch_text(msg_dir)              msg_*.bin files of ichigo_message_all_US
+      replaces the English text with translation/th.json and pre-positions
+      tone marks (raised tone glyphs over upper vowels).
+  patch_fonts(font_dir, texconv)   *_0.DDS + *_param.bin of font_data
+      decodes each atlas, adds Thai glyphs (Noto Sans Thai SemiBold, SIL OFL)
+      sized to the font's line height, updates the glyph table, re-encodes BC7.
 
-  1. fonts : decodes each in-game font atlas with the toolkit's texconv, adds
-             Thai glyphs (Noto Sans Thai SemiBold, SIL OFL) sized to fit the
-             font's line height, updates the glyph table, re-encodes to BC7.
-  2. text  : replaces the English game text with the Thai translation and
-             pre-positions tone marks (raised tone glyphs over upper vowels).
-
-Usage:  python install_thai.py --toolkit "<path to sos-fomt_disc-toolkit>" [--only fonts|text]
-Needs:  Python 3.8+, Pillow  (pip install pillow)
+Both refuse files that already contain Thai (never patch twice).
+Needs Python 3.8+ and Pillow.
 """
-import argparse, glob, json, os, shutil, struct, subprocess, sys
+import glob, json, os, shutil, struct, subprocess, sys
 
 try:
     from PIL import Image
@@ -23,8 +20,6 @@ except ImportError:
     sys.exit("Pillow is missing. Install it with:  py -3 -m pip install pillow")
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MSG_REL = os.path.join("__raw-assets", "resource", "message", "ichigo_message_all_US.lzs.dcmp")
-FONT_REL = os.path.join("__raw-assets", "resource", "ui", "font_data.lzs.dcmp")
 FONTS = ["DFT_R9", "DFT_R8", "DFGBFY7", "DFGB_Y9", "FOT-SeuratCapiePro-EB",
          "FOT-UDMarugo_LargePro-B", "HOBBYWIR", "K2", "K3", "SHORHB__"]
 RS = 0x20000          # param.bin: u16 cmap[0x10000] then 12-byte glyph records
@@ -74,18 +69,16 @@ def has_thai(s):
     return any(0x0E00 <= ord(c) <= 0x0E7F or 0xE000 <= ord(c) <= 0xE0FF for c in s)
 
 
-def do_text(tk, base=None):
-    msg = os.path.join(base or tk, MSG_REL)
+def patch_text(msg_dir):
     tr = json.load(open(os.path.join(REPO, "translation", "th.json"), encoding="utf-8"))
-    sysbin = os.path.join(msg, "msg_System.bin")
+    sysbin = os.path.join(msg_dir, "msg_System.bin")
     if not os.path.exists(sysbin):
-        sys.exit("Cannot find " + sysbin + "\nRun unpack-encrypted-disc and extract-assets first.")
+        sys.exit("Cannot find " + sysbin)
     if any(has_thai(s) for s in read_bin(sysbin)):
-        sys.exit("The extracted game text already contains Thai.\n"
-                 "Extract again from the ORIGINAL (unmodded) disc file, then re-run.")
+        sys.exit("The game text already contains Thai: the disc used is not the original.")
     total = 0
     for fn, entries in tr.items():
-        p = os.path.join(msg, fn)
+        p = os.path.join(msg_dir, fn)
         if not os.path.exists(p):
             log("  ! missing", fn, "(skipped)")
             continue
@@ -96,17 +89,10 @@ def do_text(tk, base=None):
                 strs[i] = th
                 total += 1
         write_bin(p, [shape(s) for s in strs])
-    log(f"  text: {total} strings written")
+    log(f"  text: {total} strings")
 
 
 # ---------------------------------------------------------------- fonts
-def texconv(tk):
-    exe = os.path.join(tk, "utils", "texconv.exe")
-    if not os.path.exists(exe):
-        sys.exit("Cannot find " + exe)
-    return exe
-
-
 def run(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:
@@ -229,64 +215,24 @@ def inject(name, atlas, param, kits):
     return em
 
 
-def do_fonts(tk, base=None):
-    fdir = os.path.join(base or tk, FONT_REL)
-    exe = texconv(tk)
-    work = os.path.join(base or tk, "_thai_patch_work")
+def patch_fonts(font_dir, exe):
+    p = find_case(font_dir, "FOT-UDMarugo_LargePro-B_param.bin")
+    if not p:
+        sys.exit("Cannot find the font files in " + font_dir)
+    if struct.unpack_from("<H", open(p, "rb").read(), 0x0E01 * 2)[0] != 0xFFFF:
+        sys.exit("The game fonts already contain Thai: the disc used is not the original.")
+    work = os.path.join(font_dir, "_png")
     shutil.rmtree(work, ignore_errors=True)
     os.makedirs(work)
     kits = available_kits()
     for name in FONTS:
-        dds = find_case(fdir, f"{name}_0.DDS")
-        param = find_case(fdir, f"{name}_param.bin")
+        dds = find_case(font_dir, f"{name}_0.DDS")
+        param = find_case(font_dir, f"{name}_param.bin")
         if not dds or not param:
-            log("  ! font not found, skipped:", name)
-            continue
-        print(f"  font {name}: decode", end="", flush=True)
-        run([exe, "-ft", "PNG", "-y", "-o", work, dds])
+            sys.exit("Font not found: " + name)
+        run([exe, "-nologo", "-ft", "PNG", "-y", "-o", work, dds])
         png = find_case(work, f"{name}_0.png")
         em = inject(name, png, param, kits)
-        log(f" -> add Thai (size {em}) -> encode BC7 (may take a minute)...")
-        run([exe, "-f", "BC7_UNORM", "-dx10", "-m", "1", "-y", "-o", fdir, png])
+        log(f"  font {name}: Thai size {em}, encoding BC7 ...")
+        run([exe, "-nologo", "-f", "BC7_UNORM", "-dx10", "-m", "1", "-y", "-o", font_dir, png])
     shutil.rmtree(work, ignore_errors=True)
-
-
-def precheck(tk, only, base=None):
-    """Refuse to touch assets that were already patched (would double-inject)."""
-    base = base or tk
-    if only in (None, "text"):
-        sysbin = os.path.join(base, MSG_REL, "msg_System.bin")
-        if not os.path.exists(sysbin):
-            sys.exit("Cannot find " + sysbin + "\nRun unpack-encrypted-disc and extract-assets first.")
-        if any(has_thai(s) for s in read_bin(sysbin)):
-            sys.exit("The extracted game text already contains Thai.\n"
-                     "Extract again from the ORIGINAL (unmodded) disc file, then re-run.")
-    if only in (None, "fonts"):
-        texconv(tk)
-        p = find_case(os.path.join(base, FONT_REL), "FOT-UDMarugo_LargePro-B_param.bin")
-        if not p:
-            sys.exit("Cannot find the font files in " + os.path.join(base, FONT_REL))
-        d = open(p, "rb").read()
-        if struct.unpack_from("<H", d, 0x0E01 * 2)[0] != 0xFFFF:
-            sys.exit("The extracted fonts already contain Thai.\n"
-                     "Extract again from the ORIGINAL (unmodded) disc file, then re-run.")
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--toolkit", required=True, help="path to the sos-fomt_disc-toolkit folder")
-    ap.add_argument("--only", choices=["fonts", "text"])
-    a = ap.parse_args()
-    tk = os.path.abspath(a.toolkit)
-    precheck(tk, a.only)
-    if a.only in (None, "text"):
-        log("[1/2] Thai text")
-        do_text(tk)
-    if a.only in (None, "fonts"):
-        log("[2/2] Thai fonts")
-        do_fonts(tk)
-    log("Done.")
-
-
-if __name__ == "__main__":
-    main()

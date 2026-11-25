@@ -2,6 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 title STORY OF SEASONS: Friends of Mineral Town - remove Thai patch
 set "GAME=%~1"
+if not defined GAME if exist "%~dp0..\disc.original" for %%G in ("%~dp0..") do set "GAME=%%~fG"
 if not defined GAME for %%G in (
   "C:\Program Files (x86)\Steam\steamapps\common\STORY OF SEASONS Friends of Mineral Town"
   "C:\Program Files\Steam\steamapps\common\STORY OF SEASONS Friends of Mineral Town"

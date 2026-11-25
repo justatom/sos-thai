@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
-_thai_patch_work/
+_thai_build/
+_png/
 # never commit game files
 disc
 disc.*
